@@ -116,19 +116,13 @@
             </table>
         </div>
 
-        <nav>
-            <ul class="pagination justify-content-center">
-                <li class="page-item" :class="{ disabled: page === 1 }">
-                    <button class="page-link" @click="prevPage" :disabled="page === 1">Prev</button>
-                </li>
-                <li class="page-item disabled">
-                    <span class="page-link">Page {{ page }}</span>
-                </li>
-                <li class="page-item" :class="{ disabled: transactions.length < limit }">
-                    <button class="page-link" @click="nextPage" :disabled="transactions.length < limit">Next</button>
-                </li>
-            </ul>
-        </nav>
+        <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-outline-secondary" :disabled="page === 1" @click="prevPage">Sebelumnya</button>
+            <span>Halaman {{ page }} dari {{ Math.ceil(total / limit) }}</span>
+            <button class="btn btn-outline-secondary" :disabled="page >= Math.ceil(total / limit)"
+                @click="nextPage">Berikutnya</button>
+        </div>
+
     </div>
 </template>
 
@@ -142,6 +136,7 @@ export default {
             search: "",
             page: 1,
             limit: 10,
+            total: 0,
             students: [],
             books: [],
             racks: [],
@@ -164,6 +159,8 @@ export default {
                     },
                 });
                 this.transactions = res.data.data;
+                this.total = res.data.total;
+
             } catch (err) {
                 console.error("Gagal mengambil data transaksi:", err);
             }
@@ -229,19 +226,18 @@ export default {
                 duration: this.duration,
             };
 
-            console.log("Payload yang akan dikirim:", payload);
-
             try {
                 const res = await api.post("/transactions", payload);
-                if (res.data.message) {
+                if (res.data.statusCode === 201) {
                     alert("Buku berhasil dipinjam!");
                     this.borrowedBooks = [];
                     this.fetchTransactions();
                 }
             } catch (err) {
-                alert("Gagal meminjam buku. Coba lagi.");
-                console.error(err);
+                const errorMessage = err.response?.data?.error || "Gagal meminjam buku. Coba lagi.";
+                alert(errorMessage);
             }
+
         },
 
         async markAsReturned(transactionId) {
@@ -288,6 +284,7 @@ export default {
             this.fetchTransactions();
         },
         search() {
+            this.page = 1;
             this.fetchTransactions();
         },
     },
